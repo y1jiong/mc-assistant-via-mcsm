@@ -9,7 +9,7 @@ func main() {
 	c := common.Config{}
 	//_ = c.InitToFile()
 	_ = c.LoadFromFile()
-	f := data.FinalFormat{}
+	f := data.TeamsFormat{}
 	_ = common.MarshalAndSave(f, c.DataFileName)
 	_ = f.ExecuteCommand(c.ApiUrl, c.ApiKey, c.ServerName)
 }

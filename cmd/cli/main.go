@@ -1,25 +1,25 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	flag "github.com/spf13/pflag"
 	"log"
 	"mc-whitelist-team-manager-cli/internal/common"
 	"mc-whitelist-team-manager-cli/internal/data"
 )
 
 const (
-	Version   = "0.1.5"
+	Version   = "0.1.6"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
 
 var (
 	Build              = ""
-	versionOption      = flag.Bool("v", false, "打印版本信息并退出")
-	initOption         = flag.Bool("i", false, "初始化配置文件并退出")
-	generateDataOption = flag.String("g", "", "指定队伍目录并生成数据文件并退出")
-	dataFileName       = flag.String("d", "", "忽视配置文件数据文件名并指定数据文件名")
+	versionOption      = flag.BoolP("version", "v", false, "打印版本信息并退出")
+	initOption         = flag.BoolP("init", "i", false, "初始化配置文件并退出")
+	generateDataOption = flag.StringP("generate", "g", "", "指定队伍目录并生成数据文件并退出")
+	dataFileName       = flag.StringP("data", "d", "", "忽视配置文件设置的数据文件名并指定数据文件名")
 )
 
 func main() {
@@ -50,7 +50,8 @@ func main() {
 	}
 
 	generateFromDirectory := *generateDataOption
-	f := data.FinalFormat{}
+	f := data.TeamsFormat{}
+	f.Init()
 	if generateFromDirectory != "" {
 		if l := len(generateFromDirectory); generateFromDirectory[l-1:] == "/" || generateFromDirectory[l-1:] == "\\" {
 			generateFromDirectory = generateFromDirectory[0 : l-1]
