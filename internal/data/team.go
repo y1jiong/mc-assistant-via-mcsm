@@ -23,12 +23,12 @@ type TeamsFormat struct {
 	ID         map[string]bool
 }
 
-func (f *TeamsFormat) Init() {
+func (f *TeamsFormat) Init(insecure bool) {
 	f.Teams = make([]TeamFormat, 0, 4)
 	f.httpClient = http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: insecure,
 			},
 		},
 	}

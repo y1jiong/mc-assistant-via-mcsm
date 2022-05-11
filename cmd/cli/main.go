@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Version   = "0.1.6"
+	Version   = "0.1.7"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
@@ -20,6 +20,7 @@ var (
 	initOption         = flag.BoolP("init", "i", false, "初始化配置文件并退出")
 	generateDataOption = flag.StringP("generate", "g", "", "指定队伍目录并生成数据文件并退出")
 	dataFileName       = flag.StringP("data", "d", "", "忽视配置文件设置的数据文件名并指定数据文件名")
+	insecure           = flag.BoolP("insecure", "k", false, "使用 SSL 时允许不安全的服务器连接")
 )
 
 func main() {
@@ -51,7 +52,7 @@ func main() {
 
 	generateFromDirectory := *generateDataOption
 	f := data.TeamsFormat{}
-	f.Init()
+	f.Init(*insecure)
 	if generateFromDirectory != "" {
 		if l := len(generateFromDirectory); generateFromDirectory[l-1:] == "/" || generateFromDirectory[l-1:] == "\\" {
 			generateFromDirectory = generateFromDirectory[0 : l-1]
