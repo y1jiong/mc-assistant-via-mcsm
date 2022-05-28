@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Version   = "0.1.7"
+	Version   = "0.1.8"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
@@ -61,7 +61,7 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = common.MarshalAndSave(f, c.DataFileName)
+		err = common.MarshalAndSave(f.Teams, c.DataFileName)
 		if err != nil {
 			log.Fatalln(err)
 		}
