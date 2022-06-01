@@ -11,5 +11,5 @@ func main() {
 	_ = c.LoadFromFile()
 	f := data.TeamsFormat{}
 	_ = common.MarshalAndSave(f, c.DataFileName)
-	_ = f.ExecuteCommand(c.ApiUrl, c.ApiKey, c.ServerName)
+	_ = f.ExecuteWhiteTeamCommand(c.ApiUrl, c.ApiKey, c.ServerName)
 }

@@ -18,9 +18,10 @@ type TeamFormat struct {
 }
 
 type TeamsFormat struct {
-	Teams      []TeamFormat
-	httpClient http.Client
-	ID         map[string]bool
+	Teams         []TeamFormat
+	httpClient    http.Client
+	ID            map[string]bool
+	TpCoordinates []string
 }
 
 func (f *TeamsFormat) Init(insecure bool) {
@@ -102,8 +103,8 @@ func (f *TeamsFormat) loadTxtFile(teamName, filePath string) (err error) {
 	return
 }
 
-// ExecuteCommand 目前仅支持 MCSM 8
-func (f TeamsFormat) ExecuteCommand(apiUrl, apiKey, serverName string) (err error) {
+// ExecuteWhiteTeamCommand 目前仅支持 MCSM 8
+func (f TeamsFormat) ExecuteWhiteTeamCommand(apiUrl, apiKey, serverName string) (err error) {
 	// 拼接最终 API 地址
 	dstUrl := apiUrl + "/?apikey=" + apiKey
 	for _, v := range f.Teams {
@@ -157,5 +158,54 @@ func (f TeamsFormat) postCommand(apiUrl, serverName, command string) (err error)
 		return errors.New("statusCode is not 200")
 	}
 	err = resp.Body.Close()
+	return
+}
+
+func (f *TeamsFormat) ParseCoordinate(coordinateFile string) (err error) {
+	_, err = os.Stat(coordinateFile)
+	if err != nil {
+		return
+	}
+	txtContent, err := os.ReadFile(coordinateFile)
+	// CRLF to LF
+	content := strings.ReplaceAll(string(txtContent), "\r\n", "\n")
+	if err != nil {
+		return
+	}
+	for _, v := range strings.Split(content, "\n") {
+		// 检查空行
+		if v != "" {
+			(*f).TpCoordinates = append((*f).TpCoordinates, v)
+		}
+	}
+	return
+}
+
+func (f TeamsFormat) ExecuteTpCommand(apiUrl, apiKey, serverName, tpTeam string, tpCountPerCoordinate int) (err error) {
+	maxPosition := len(f.TpCoordinates)
+	position := 0
+	count := 0
+	dstUrl := apiUrl + "/?apikey=" + apiKey
+	for _, v := range f.Teams {
+		if v.TeamName == tpTeam {
+			for _, vv := range v.Members {
+				// tp sb. coordinate
+				err = f.postCommand(dstUrl, serverName, "tp "+vv+" "+f.TpCoordinates[position])
+				count++
+				if count >= tpCountPerCoordinate {
+					position++
+					if position >= maxPosition {
+						position = 0
+					}
+					count = 0
+				}
+				if err != nil {
+					return
+				}
+				time.Sleep(1100 * time.Millisecond)
+			}
+			break
+		}
+	}
 	return
 }
