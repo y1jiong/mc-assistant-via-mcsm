@@ -10,6 +10,6 @@ func main() {
 	//_ = c.InitToFile()
 	_ = c.LoadFromFile()
 	f := data.TeamsFormat{}
-	_ = common.MarshalAndSave(f, c.DataFileName)
+	_ = common.MarshalAndSave(f, c.DefaultDataFileName)
 	_ = f.ExecuteWhiteTeamCommand(c.ApiUrl, c.ApiKey, c.ServerName)
 }

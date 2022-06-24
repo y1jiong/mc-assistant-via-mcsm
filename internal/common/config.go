@@ -9,16 +9,16 @@ const (
 )
 
 type Config struct {
-	ApiUrl       string `json:"api_url"`
-	ApiKey       string `json:"api_key"`
-	ServerName   string `json:"server_name"`
-	DataFileName string `json:"data_file_name"`
+	ApiUrl              string `json:"api_url"`
+	ApiKey              string `json:"api_key"`
+	ServerName          string `json:"server_name"`
+	DefaultDataFileName string `json:"default_data_file_name"`
 }
 
 func (c *Config) InitToFile() (err error) {
 	*c = Config{
-		ApiUrl:       "http://127.0.0.1:23333/api/execute",
-		DataFileName: "data.json",
+		ApiUrl:              "http://127.0.0.1:23333/api/execute",
+		DefaultDataFileName: "data.json",
 	}
 	if err != nil {
 		return

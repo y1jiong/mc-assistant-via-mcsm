@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Version   = "0.1.9"
+	Version   = "0.1.10"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
@@ -51,7 +51,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	if *dataFile != "" {
-		c.DataFileName = *dataFile
+		c.DefaultDataFileName = *dataFile
 	}
 
 	// 生成可被解析的数据
@@ -66,7 +66,7 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = common.MarshalAndSave(f.Teams, c.DataFileName)
+		err = common.MarshalAndSave(f.Teams, c.DefaultDataFileName)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// 加载可解析的数据
-	err = f.LoadJsonFile(c.DataFileName)
+	err = f.LoadJsonFile(c.DefaultDataFileName)
 	if err != nil {
 		log.Fatalln(err)
 	}
