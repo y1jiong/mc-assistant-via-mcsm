@@ -19,7 +19,7 @@ var (
 	versionOption        = flag.BoolP("version", "v", false, "打印版本信息并退出")
 	initOption           = flag.BoolP("init", "i", false, "初始化配置文件并退出")
 	generateDataOption   = flag.StringP("generate", "g", "", "指定队伍目录并生成数据文件并退出")
-	dataFile             = flag.StringP("data", "d", "", "忽视配置文件设置的数据文件名并指定数据文件名")
+	dataFile             = flag.StringP("data", "d", "", "手动指定数据文件名")
 	insecure             = flag.BoolP("insecure", "k", false, "使用 SSL 时允许不安全的服务器连接")
 	tpTeam               = flag.StringP("tp-team", "t", "", "指定要 tp 的队伍")
 	tpCountPerCoordinate = flag.IntP("tp-count-per-coordinate", "", 1, "每个坐标传送几个玩家")
