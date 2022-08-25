@@ -11,13 +11,14 @@ const (
 type Config struct {
 	ApiUrl              string `json:"api_url"`
 	ApiKey              string `json:"api_key"`
-	ServerName          string `json:"server_name"`
+	GID                 string `json:"gid"`
+	UID                 string `json:"uid"`
 	DefaultDataFileName string `json:"default_data_file_name"`
 }
 
 func (c *Config) InitToFile() (err error) {
 	*c = Config{
-		ApiUrl:              "http://127.0.0.1:23333/api/execute",
+		ApiUrl:              "http://127.0.0.1:23333/api/protected_instance/command",
 		DefaultDataFileName: "data.json",
 	}
 	if err != nil {

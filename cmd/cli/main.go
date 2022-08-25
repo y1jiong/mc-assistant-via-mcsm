@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Version   = "0.1.10"
+	Version   = "0.2.1"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
@@ -85,13 +85,13 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = f.ExecuteTpCommand(c.ApiUrl, c.ApiKey, c.ServerName, *tpTeam, *tpCountPerCoordinate)
+		err = f.ExecuteTpCommand(c, *tpTeam, *tpCountPerCoordinate)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	} else {
 		// 执行白名单和分队命令
-		err = f.ExecuteWhiteTeamCommand(c.ApiUrl, c.ApiKey, c.ServerName)
+		err = f.ExecuteWhiteTeamCommand(c)
 		if err != nil {
 			log.Fatalln(err)
 		}
