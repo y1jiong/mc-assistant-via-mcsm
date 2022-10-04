@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Version   = "0.2.1"
+	Version   = "0.2.2"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
@@ -20,10 +20,11 @@ var (
 	initOption           = flag.BoolP("init", "i", false, "初始化配置文件并退出")
 	generateDataOption   = flag.StringP("generate", "g", "", "指定队伍目录并生成数据文件并退出")
 	dataFile             = flag.StringP("data", "d", "", "手动指定数据文件名")
-	insecure             = flag.BoolP("insecure", "k", false, "使用 SSL 时允许不安全的服务器连接")
+	insecure             = flag.BoolP("insecure", "k", false, "使用 https 链接时不检查 TLS 证书合法性")
 	tpTeam               = flag.StringP("tp-team", "t", "", "指定要 tp 的队伍")
 	tpCountPerCoordinate = flag.IntP("tp-count-per-coordinate", "", 1, "每个坐标传送几个玩家")
 	coordinateFile       = flag.StringP("coordinate-file", "c", "", "导入每行一个坐标，每个坐标的xyz轴用空格分隔的文本文件")
+	noTeam               = flag.BoolP("no-team", "N", false, "仅加白名单，不分配队伍")
 )
 
 func main() {
@@ -78,6 +79,9 @@ func main() {
 	err = f.LoadJsonFile(c.DefaultDataFileName)
 	if err != nil {
 		log.Fatalln(err)
+	}
+	if *noTeam {
+		f.NoTeam = *noTeam
 	}
 	if *tpTeam != "" {
 		// 执行 tp 命令

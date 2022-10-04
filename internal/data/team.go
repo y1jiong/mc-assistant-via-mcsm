@@ -7,6 +7,7 @@ import (
 	"mc-whitelist-team-manager-cli/internal/common"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,6 +23,7 @@ type TeamsFormat struct {
 	ID            map[string]bool
 	TpCoordinates []string
 	DelayDuration time.Duration
+	NoTeam        bool
 }
 
 func (f *TeamsFormat) Init(insecure bool) {
@@ -105,34 +107,39 @@ func (f *TeamsFormat) loadTxtFile(teamName, filePath string) (err error) {
 }
 
 // ExecuteWhiteTeamCommand 目前仅支持 MCSM 9
-func (f TeamsFormat) ExecuteWhiteTeamCommand(c common.Config) (err error) {
+func (f *TeamsFormat) ExecuteWhiteTeamCommand(c common.Config) (err error) {
 	// 拼接最终 API 地址
 	for _, v := range f.Teams {
 		// 创建队伍
-		err = f.sendCommand(c, "team add "+v.TeamName)
-		if err != nil {
-			return
+		if !f.NoTeam {
+			err = f.sendCommand(c, "team add "+v.TeamName)
+			if err != nil {
+				return
+			}
+			time.Sleep(f.DelayDuration)
 		}
 		for _, vv := range v.Members {
-			time.Sleep(f.DelayDuration)
 			// 加入白名单
 			err = f.sendCommand(c, "whitelist add "+vv)
 			if err != nil {
 				return
 			}
 			time.Sleep(f.DelayDuration)
+
 			// 加入队伍
-			err = f.sendCommand(c, "team join "+v.TeamName+" "+vv)
-			if err != nil {
-				return
+			if !f.NoTeam {
+				err = f.sendCommand(c, "team join "+v.TeamName+" "+vv)
+				if err != nil {
+					return
+				}
+				time.Sleep(f.DelayDuration)
 			}
 		}
-		time.Sleep(f.DelayDuration)
 	}
 	return
 }
 
-func (f TeamsFormat) sendCommand(c common.Config, command string) (err error) {
+func (f *TeamsFormat) sendCommand(c common.Config, command string) (err error) {
 	log.Println(command)
 	// 准备请求
 	req, err := http.NewRequest("GET", c.ApiUrl, nil)
@@ -152,8 +159,8 @@ func (f TeamsFormat) sendCommand(c common.Config, command string) (err error) {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
-		return errors.New("statusCode is not 200")
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("statusCode is " + strconv.Itoa(resp.StatusCode))
 	}
 	err = resp.Body.Close()
 	return
@@ -179,7 +186,7 @@ func (f *TeamsFormat) ParseCoordinate(coordinateFile string) (err error) {
 	return
 }
 
-func (f TeamsFormat) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPerCoordinate int) (err error) {
+func (f *TeamsFormat) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPerCoordinate int) (err error) {
 	maxPosition := len(f.TpCoordinates)
 	position := 0
 	count := 0
