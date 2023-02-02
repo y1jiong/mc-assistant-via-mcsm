@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	Version   = "0.2.2"
+	Version   = "0.2.3"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
 
 var (
-	Build                = ""
+	BuildTime            = ""
+	CommitHash           = ""
 	versionOption        = flag.BoolP("version", "v", false, "打印版本信息并退出")
 	initOption           = flag.BoolP("init", "i", false, "初始化配置文件并退出")
 	generateDataOption   = flag.StringP("generate", "g", "", "指定队伍目录并生成数据文件并退出")
@@ -30,8 +31,9 @@ var (
 func main() {
 	flag.Parse()
 	if *versionOption {
-		fmt.Println("Version " + Version)
-		fmt.Println("Build " + Build)
+		fmt.Println("Version: " + Version)
+		fmt.Println("Build Time: " + BuildTime)
+		fmt.Println("Commit Hash: " + CommitHash)
 		fmt.Println(Copyright)
 		return
 	}
