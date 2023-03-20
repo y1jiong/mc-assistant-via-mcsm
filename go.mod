@@ -1,4 +1,4 @@
-module mc-whitelist-team-manager-cli
+module mc-assistant-via-mcsm
 
 go 1.20
 

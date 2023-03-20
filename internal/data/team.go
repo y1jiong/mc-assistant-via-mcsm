@@ -1,15 +1,11 @@
 package data
 
 import (
-	"crypto/tls"
 	"errors"
 	"log"
-	"mc-whitelist-team-manager-cli/internal/common"
-	"net/http"
+	"mc-assistant-via-mcsm/internal/common"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type TeamFormat struct {
@@ -19,24 +15,14 @@ type TeamFormat struct {
 
 type TeamsFormat struct {
 	Teams         []TeamFormat
-	httpClient    http.Client
 	ID            map[string]bool
 	TpCoordinates []string
-	DelayDuration time.Duration
 	NoTeam        bool
 }
 
-func (f *TeamsFormat) Init(insecure bool) {
+func (f *TeamsFormat) Init() {
 	f.Teams = make([]TeamFormat, 0, 4)
-	f.httpClient = http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: insecure,
-			},
-		},
-	}
 	f.ID = make(map[string]bool)
-	f.DelayDuration = 550 * time.Millisecond
 	return
 }
 
@@ -112,57 +98,30 @@ func (f *TeamsFormat) ExecuteWhiteTeamCommand(c common.Config) (err error) {
 	for _, v := range f.Teams {
 		// 创建队伍
 		if !f.NoTeam {
-			err = f.sendCommand(c, "team add "+v.TeamName)
+			err = c.SendCommand("team add " + v.TeamName)
 			if err != nil {
 				return
 			}
-			time.Sleep(f.DelayDuration)
+			c.Delay()
 		}
 		for _, vv := range v.Members {
 			// 加入白名单
-			err = f.sendCommand(c, "whitelist add "+vv)
+			err = c.SendCommand("whitelist add " + vv)
 			if err != nil {
 				return
 			}
-			time.Sleep(f.DelayDuration)
+			c.Delay()
 
 			// 加入队伍
 			if !f.NoTeam {
-				err = f.sendCommand(c, "team join "+v.TeamName+" "+vv)
+				err = c.SendCommand("team join " + v.TeamName + " " + vv)
 				if err != nil {
 					return
 				}
-				time.Sleep(f.DelayDuration)
+				c.Delay()
 			}
 		}
 	}
-	return
-}
-
-func (f *TeamsFormat) sendCommand(c common.Config, command string) (err error) {
-	log.Println(command)
-	// 准备请求
-	req, err := http.NewRequest("GET", c.ApiUrl, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	q := req.URL.Query()
-	q.Add("uuid", c.UID)
-	q.Add("remote_uuid", c.GID)
-	q.Add("apikey", c.ApiKey)
-	q.Add("command", command)
-	req.URL.RawQuery = q.Encode()
-
-	// 发送请求
-	resp, err := f.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return errors.New("statusCode is " + strconv.Itoa(resp.StatusCode))
-	}
-	err = resp.Body.Close()
 	return
 }
 
@@ -194,7 +153,7 @@ func (f *TeamsFormat) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPe
 		if v.TeamName == tpTeam {
 			for _, vv := range v.Members {
 				// tp sb. coordinate
-				err = f.sendCommand(c, "tp "+vv+" "+f.TpCoordinates[position])
+				err = c.SendCommand("tp " + vv + " " + f.TpCoordinates[position])
 				count++
 				if count >= tpCountPerCoordinate {
 					position++
@@ -206,7 +165,7 @@ func (f *TeamsFormat) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPe
 				if err != nil {
 					return
 				}
-				time.Sleep(f.DelayDuration)
+				c.Delay()
 			}
 			break
 		}

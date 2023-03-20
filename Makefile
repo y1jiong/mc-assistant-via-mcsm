@@ -1,5 +1,5 @@
-BINARY_NAME = mc-whitelist-team-manager-cli
-CODE_FILE = ./cmd/cli/main.go
+BINARY_NAME = mc-assistant-via-mcsm
+CODE_FILE = ./cmd/main.go
 OUTPUT_PATH = ./build
 BUILD_TIME = $(shell date "+%Y-%m-%d %H:%M:%S")
 COMMIT_HASH = $(shell git rev-parse HEAD)
@@ -7,6 +7,9 @@ LDFLAGS = -w -s
 LDFLAGS += -X "main.BuildTime=$(BUILD_TIME)"
 LDFLAGS += -X "main.CommitHash=$(COMMIT_HASH)"
 
+
+.PHONY: default
+default: check linux-amd64
 
 .PHONY: all
 all: check linux windows darwin

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	flag "github.com/spf13/pflag"
 	"log"
-	"mc-whitelist-team-manager-cli/internal/common"
-	"mc-whitelist-team-manager-cli/internal/data"
+	"mc-assistant-via-mcsm/internal/common"
+	"mc-assistant-via-mcsm/internal/data"
+	"mc-assistant-via-mcsm/internal/service"
 )
 
 const (
-	Version   = "0.2.3"
+	Version   = "0.3.0"
 	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
@@ -26,15 +27,14 @@ var (
 	tpCountPerCoordinate = flag.IntP("tp-count-per-coordinate", "", 1, "每个坐标传送几个玩家")
 	coordinateFile       = flag.StringP("coordinate-file", "c", "", "导入每行一个坐标，每个坐标的xyz轴用空格分隔的文本文件")
 	noTeam               = flag.BoolP("no-team", "N", false, "仅加白名单，不分配队伍")
+	tickerInGameDay      = flag.IntP("ticker", "T", 0, "指定游戏内一天多少分钟")
+	delay                = flag.IntP("delay", "D", 0, "指定每次发送命令的延迟，单位毫秒。只能大于 550 毫秒")
 )
 
 func main() {
 	flag.Parse()
 	if *versionOption {
-		fmt.Println("Version: " + Version)
-		fmt.Println("Build Time: " + BuildTime)
-		fmt.Println("Commit Hash: " + CommitHash)
-		fmt.Println(Copyright)
+		printVersion()
 		return
 	}
 
@@ -42,6 +42,7 @@ func main() {
 
 	// 处理配置文件
 	c := common.Config{}
+	// 初始化配置文件
 	if *initOption {
 		err = c.InitToFile()
 		if err != nil {
@@ -49,6 +50,7 @@ func main() {
 		}
 		return
 	}
+	// 加载配置文件
 	err = c.LoadFromFile()
 	if err != nil {
 		log.Fatalln(err)
@@ -56,11 +58,23 @@ func main() {
 	if *dataFile != "" {
 		c.DefaultDataFileName = *dataFile
 	}
+	c.Init(*insecure)
+	if *delay > c.DelayMilliseconds {
+		c.SetDelay(*delay)
+	}
+
+	// mc time ticker
+	if *tickerInGameDay != 0 {
+		err = service.RunTicker(c, *tickerInGameDay)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		return
+	}
 
 	// 生成可被解析的数据
 	generateFromDirectory := *generateDataOption
 	f := data.TeamsFormat{}
-	f.Init(*insecure)
 	if generateFromDirectory != "" {
 		if l := len(generateFromDirectory); generateFromDirectory[l-1:] == "/" || generateFromDirectory[l-1:] == "\\" {
 			generateFromDirectory = generateFromDirectory[0 : l-1]
@@ -103,4 +117,11 @@ func main() {
 		}
 	}
 	log.Println("执行完成")
+}
+
+func printVersion() {
+	fmt.Println("Version: " + Version)
+	fmt.Println("Build Time: " + BuildTime)
+	fmt.Println("Commit Hash: " + CommitHash)
+	fmt.Println(Copyright)
 }
