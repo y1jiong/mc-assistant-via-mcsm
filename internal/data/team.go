@@ -8,29 +8,29 @@ import (
 	"strings"
 )
 
-type TeamFormat struct {
+type Team struct {
 	TeamName string   `json:"team_name"`
 	Members  []string `json:"members"`
 }
 
-type TeamsFormat struct {
-	Teams         []TeamFormat
-	ID            map[string]bool
+type Teams struct {
+	Teams         []Team
+	Id            map[string]bool
 	TpCoordinates []string
 	NoTeam        bool
 }
 
-func (f *TeamsFormat) Init() {
-	f.Teams = make([]TeamFormat, 0, 4)
-	f.ID = make(map[string]bool)
+func (s *Teams) Init() {
+	s.Teams = make([]Team, 0, 4)
+	s.Id = make(map[string]bool)
 	return
 }
 
-func (f *TeamsFormat) LoadJsonFile(fileName string) (err error) {
-	return common.LoadAndUnmarshal(fileName, &(f.Teams))
+func (s *Teams) LoadJsonFile(fileName string) (err error) {
+	return common.LoadAndUnmarshal(fileName, &(s.Teams))
 }
 
-func (f *TeamsFormat) ParseTeamAndMember(teamDirectoryName string) (err error) {
+func (s *Teams) ParseTeamAndMember(teamDirectoryName string) (err error) {
 	fileInfoList, err := os.ReadDir(teamDirectoryName)
 	if err != nil {
 		return
@@ -56,7 +56,7 @@ func (f *TeamsFormat) ParseTeamAndMember(teamDirectoryName string) (err error) {
 			// 读取队伍成员文件
 			path := teamDirectoryName + "/" + v.Name()
 			log.Println("加载队伍", teamName, "("+v.Name()+")")
-			err = f.loadTxtFile(teamName, path)
+			err = s.loadTxtFile(teamName, path)
 			if err != nil {
 				return
 			}
@@ -65,9 +65,9 @@ func (f *TeamsFormat) ParseTeamAndMember(teamDirectoryName string) (err error) {
 	return
 }
 
-func (f *TeamsFormat) loadTxtFile(teamName, filePath string) (err error) {
+func (s *Teams) loadTxtFile(teamName, filePath string) (err error) {
 	// 新增队伍数据结构
-	t := TeamFormat{TeamName: teamName}
+	t := Team{TeamName: teamName}
 	_, err = os.Stat(filePath)
 	if err != nil {
 		return
@@ -81,23 +81,23 @@ func (f *TeamsFormat) loadTxtFile(teamName, filePath string) (err error) {
 	for _, v := range strings.Split(content, "\n") {
 		// 检查空行
 		if v != "" {
-			if f.ID[v] {
+			if s.Id[v] {
 				return errors.New("检查到 ID: " + v + " 重复")
 			}
 			t.Members = append(t.Members, v)
-			f.ID[v] = true
+			s.Id[v] = true
 		}
 	}
-	(*f).Teams = append((*f).Teams, t)
+	(*s).Teams = append((*s).Teams, t)
 	return
 }
 
 // ExecuteWhiteTeamCommand 目前仅支持 MCSM 9
-func (f *TeamsFormat) ExecuteWhiteTeamCommand(c common.Config) (err error) {
+func (s *Teams) ExecuteWhiteTeamCommand(c common.Config) (err error) {
 	// 拼接最终 API 地址
-	for _, v := range f.Teams {
+	for _, v := range s.Teams {
 		// 创建队伍
-		if !f.NoTeam {
+		if !s.NoTeam {
 			err = c.SendCommand("team add " + v.TeamName)
 			if err != nil {
 				return
@@ -113,7 +113,7 @@ func (f *TeamsFormat) ExecuteWhiteTeamCommand(c common.Config) (err error) {
 			c.Delay()
 
 			// 加入队伍
-			if !f.NoTeam {
+			if !s.NoTeam {
 				err = c.SendCommand("team join " + v.TeamName + " " + vv)
 				if err != nil {
 					return
@@ -125,7 +125,7 @@ func (f *TeamsFormat) ExecuteWhiteTeamCommand(c common.Config) (err error) {
 	return
 }
 
-func (f *TeamsFormat) ParseCoordinate(coordinateFile string) (err error) {
+func (s *Teams) ParseCoordinate(coordinateFile string) (err error) {
 	_, err = os.Stat(coordinateFile)
 	if err != nil {
 		return
@@ -139,21 +139,21 @@ func (f *TeamsFormat) ParseCoordinate(coordinateFile string) (err error) {
 	for _, v := range strings.Split(content, "\n") {
 		// 检查空行
 		if v != "" {
-			(*f).TpCoordinates = append((*f).TpCoordinates, v)
+			(*s).TpCoordinates = append((*s).TpCoordinates, v)
 		}
 	}
 	return
 }
 
-func (f *TeamsFormat) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPerCoordinate int) (err error) {
-	maxPosition := len(f.TpCoordinates)
+func (s *Teams) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPerCoordinate int) (err error) {
+	maxPosition := len(s.TpCoordinates)
 	position := 0
 	count := 0
-	for _, v := range f.Teams {
+	for _, v := range s.Teams {
 		if v.TeamName == tpTeam {
 			for _, vv := range v.Members {
 				// tp sb. coordinate
-				err = c.SendCommand("tp " + vv + " " + f.TpCoordinates[position])
+				err = c.SendCommand("tp " + vv + " " + s.TpCoordinates[position])
 				count++
 				if count >= tpCountPerCoordinate {
 					position++

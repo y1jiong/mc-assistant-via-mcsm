@@ -1,6 +1,6 @@
 BINARY_NAME = mc-assistant-via-mcsm
 CODE_FILE = ./cmd/main.go
-OUTPUT_PATH = ./build
+OUTPUT_PATH = ./manifest/build
 BUILD_TIME = $(shell date "+%Y-%m-%d %H:%M:%S")
 COMMIT_HASH = $(shell git rev-parse HEAD)
 LDFLAGS = -w -s

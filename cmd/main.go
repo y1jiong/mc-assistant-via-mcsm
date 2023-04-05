@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	Version   = "0.3.0"
-	Copyright = "Copyright © 2022 yzy613. All rights reserved.\n" +
+	Version   = "0.3.1"
+	Copyright = "Copyright © 2022-2023 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
 
@@ -56,7 +56,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	if *dataFile != "" {
-		c.DefaultDataFileName = *dataFile
+		c.DefaultDataFile = *dataFile
 	}
 	c.Init(*insecure)
 	if *delay > c.DelayMilliseconds {
@@ -74,16 +74,17 @@ func main() {
 
 	// 生成可被解析的数据
 	generateFromDirectory := *generateDataOption
-	f := data.TeamsFormat{}
+	teams := data.Teams{}
+	teams.Init()
 	if generateFromDirectory != "" {
 		if l := len(generateFromDirectory); generateFromDirectory[l-1:] == "/" || generateFromDirectory[l-1:] == "\\" {
 			generateFromDirectory = generateFromDirectory[0 : l-1]
 		}
-		err = f.ParseTeamAndMember(generateFromDirectory)
+		err = teams.ParseTeamAndMember(generateFromDirectory)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = common.MarshalAndSave(f.Teams, c.DefaultDataFileName)
+		err = common.MarshalAndSave(teams.Teams, c.DefaultDataFile)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -92,26 +93,26 @@ func main() {
 	}
 
 	// 加载可解析的数据
-	err = f.LoadJsonFile(c.DefaultDataFileName)
+	err = teams.LoadJsonFile(c.DefaultDataFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	if *noTeam {
-		f.NoTeam = *noTeam
+		teams.NoTeam = *noTeam
 	}
 	if *tpTeam != "" {
 		// 执行 tp 命令
-		err = f.ParseCoordinate(*coordinateFile)
+		err = teams.ParseCoordinate(*coordinateFile)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		err = f.ExecuteTpCommand(c, *tpTeam, *tpCountPerCoordinate)
+		err = teams.ExecuteTpCommand(c, *tpTeam, *tpCountPerCoordinate)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	} else {
 		// 执行白名单和分队命令
-		err = f.ExecuteWhiteTeamCommand(c)
+		err = teams.ExecuteWhiteTeamCommand(c)
 		if err != nil {
 			log.Fatalln(err)
 		}

@@ -14,25 +14,25 @@ const (
 )
 
 type Config struct {
-	ApiUrl              string `json:"api_url"`
-	ApiKey              string `json:"api_key"`
-	GID                 string `json:"gid"`
-	UID                 string `json:"uid"`
-	DefaultDataFileName string `json:"default_data_file_name"`
-	httpClient          http.Client
-	DelayMilliseconds   int `json:"-"`
-	delayDuration       time.Duration
+	ApiUrl            string `json:"api_url"`
+	ApiKey            string `json:"api_key"`
+	GID               string `json:"gid"`
+	UID               string `json:"uid"`
+	DefaultDataFile   string `json:"default_data_file"`
+	httpClient        http.Client
+	DelayMilliseconds int `json:"-"`
+	delayDuration     time.Duration
 }
 
-func (c *Config) InitToFile() (err error) {
-	*c = Config{
-		ApiUrl:              "http://127.0.0.1:23333/api/protected_instance/command",
-		DefaultDataFileName: "data.json",
+func (s *Config) InitToFile() (err error) {
+	*s = Config{
+		ApiUrl:          "http://127.0.0.1:23333/api/protected_instance/command",
+		DefaultDataFile: "data.json",
 	}
 	if err != nil {
 		return
 	}
-	err = MarshalAndSave(c, configFileName)
+	err = MarshalAndSave(s, configFileName)
 	if err != nil {
 		return
 	}
@@ -40,44 +40,44 @@ func (c *Config) InitToFile() (err error) {
 	return
 }
 
-func (c *Config) LoadFromFile() (err error) {
-	return LoadAndUnmarshal(configFileName, c)
+func (s *Config) LoadFromFile() (err error) {
+	return LoadAndUnmarshal(configFileName, s)
 }
 
-func (c *Config) Init(insecure bool) {
-	c.httpClient = http.Client{
+func (s *Config) Init(insecure bool) {
+	s.httpClient = http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: insecure,
 			},
 		},
 	}
-	c.DelayMilliseconds = 550
-	c.delayDuration = time.Duration(c.DelayMilliseconds) * time.Millisecond
+	s.DelayMilliseconds = 550
+	s.delayDuration = time.Duration(s.DelayMilliseconds) * time.Millisecond
 }
 
-func (c *Config) SetDelay(milliseconds int) {
-	c.DelayMilliseconds = milliseconds
-	c.delayDuration = time.Duration(milliseconds) * time.Millisecond
+func (s *Config) SetDelay(milliseconds int) {
+	s.DelayMilliseconds = milliseconds
+	s.delayDuration = time.Duration(milliseconds) * time.Millisecond
 }
 
-func (c *Config) SendCommand(command string) (err error) {
+func (s *Config) SendCommand(command string) (err error) {
 	log.Println(command)
 	// 准备请求
-	req, err := http.NewRequest("GET", c.ApiUrl, nil)
+	req, err := http.NewRequest("GET", s.ApiUrl, nil)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	q := req.URL.Query()
-	q.Add("uuid", c.UID)
-	q.Add("remote_uuid", c.GID)
-	q.Add("apikey", c.ApiKey)
+	q.Add("uuid", s.UID)
+	q.Add("remote_uuid", s.GID)
+	q.Add("apikey", s.ApiKey)
 	q.Add("command", command)
 	req.URL.RawQuery = q.Encode()
 
 	// 发送请求
-	resp, err := c.httpClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -88,10 +88,10 @@ func (c *Config) SendCommand(command string) (err error) {
 	return
 }
 
-func (c *Config) Delay() {
-	time.Sleep(c.delayDuration)
+func (s *Config) Delay() {
+	time.Sleep(s.delayDuration)
 }
 
-func (c *Config) NewTicker() *time.Ticker {
-	return time.NewTicker(c.delayDuration)
+func (s *Config) NewTicker() *time.Ticker {
+	return time.NewTicker(s.delayDuration)
 }
