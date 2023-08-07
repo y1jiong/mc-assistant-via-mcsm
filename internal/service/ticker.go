@@ -15,11 +15,18 @@ func RunTicker(c common.Config, dayMinutes int) (err error) {
 	ticksPerDelay := float64(mcDayTicks) / float64(dayMilliseconds) * float64(c.DelayMilliseconds)
 	timeAddCmd := "time add " + strconv.Itoa(int(math.Round(ticksPerDelay)))
 	ticker := c.NewTicker()
+	stopSign := make(chan bool, 1)
 	for {
-		<-ticker.C
-		err = c.SendCommand(timeAddCmd)
-		if err != nil {
+		select {
+		case <-stopSign:
 			return
+		case <-ticker.C:
+			go func() {
+				err = c.SendCommand(timeAddCmd)
+				if err != nil {
+					stopSign <- true
+				}
+			}()
 		}
 	}
 }
