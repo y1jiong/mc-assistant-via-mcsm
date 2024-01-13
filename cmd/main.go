@@ -11,7 +11,7 @@ import (
 
 const (
 	Version   = "0.3.2"
-	Copyright = "Copyright © 2022-2023 yzy613. All rights reserved.\n" +
+	Copyright = "Copyright © 2022-2024 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
 

@@ -15,14 +15,14 @@ type Team struct {
 
 type Teams struct {
 	Teams         []Team
-	Id            map[string]bool
+	Id            map[string]struct{}
 	TpCoordinates []string
 	NoTeam        bool
 }
 
 func (s *Teams) Init() {
 	s.Teams = make([]Team, 0, 4)
-	s.Id = make(map[string]bool)
+	s.Id = make(map[string]struct{})
 	return
 }
 
@@ -75,18 +75,27 @@ func (s *Teams) loadTxtFile(teamName, filePath string) (err error) {
 	txtContent, err := os.ReadFile(filePath)
 	// CRLF to LF
 	content := strings.ReplaceAll(string(txtContent), "\r\n", "\n")
+	// err text
+	errText := strings.Builder{}
 	if err != nil {
 		return
 	}
 	for _, v := range strings.Split(content, "\n") {
 		// 检查空行
 		if v != "" {
-			if s.Id[v] {
-				return errors.New("检查到 ID: " + v + " 重复")
+			if _, ok := s.Id[v]; ok {
+				if errText.Len() > 0 {
+					errText.WriteString("\n")
+				}
+				errText.WriteString("检查到 ID: " + v + " 重复")
+				continue
 			}
 			t.Members = append(t.Members, v)
-			s.Id[v] = true
+			s.Id[v] = struct{}{}
 		}
+	}
+	if errText.Len() > 0 {
+		return errors.New(errText.String())
 	}
 	(*s).Teams = append((*s).Teams, t)
 	return
