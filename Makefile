@@ -1,11 +1,13 @@
 BINARY_NAME = mc-assistant-via-mcsm
 CODE_FILE = ./cmd/main.go
 OUTPUT_PATH = ./manifest/build
-BUILD_TIME = $(shell date "+%Y-%m-%d %H:%M:%S")
-COMMIT_HASH = $(shell git rev-parse HEAD)
+BUILD_TIME = $(shell date +"%F %T %z")
+GIT_COMMIT = $(shell git log -1 --pretty=format:"%ci %h")
+GIT_TAG = $(shell git describe --tags --abbrev=0)
 LDFLAGS = -w -s
 LDFLAGS += -X "main.BuildTime=$(BUILD_TIME)"
-LDFLAGS += -X "main.CommitHash=$(COMMIT_HASH)"
+LDFLAGS += -X "main.GitCommit=$(GIT_COMMIT)"
+LDFLAGS += -X "main.GitTag=$(GIT_TAG)"
 
 
 .PHONY: default

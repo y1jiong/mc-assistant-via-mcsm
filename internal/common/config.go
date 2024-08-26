@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/tls"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,10 +17,10 @@ const (
 type Config struct {
 	ApiUrl            string `json:"api_url"`
 	ApiKey            string `json:"api_key"`
-	GID               string `json:"gid"`
-	UID               string `json:"uid"`
+	NodeId            string `json:"node_id"`
+	InstanceId        string `json:"instance_id"`
 	DefaultDataFile   string `json:"default_data_file"`
-	httpClient        http.Client
+	httpClient        *http.Client
 	DelayMilliseconds int `json:"-"`
 	delayDuration     time.Duration
 }
@@ -28,9 +29,6 @@ func (s *Config) InitToFile() (err error) {
 	*s = Config{
 		ApiUrl:          "http://127.0.0.1:23333/api/protected_instance/command",
 		DefaultDataFile: "data.json",
-	}
-	if err != nil {
-		return
 	}
 	err = MarshalAndSave(s, configFileName)
 	if err != nil {
@@ -45,7 +43,7 @@ func (s *Config) LoadFromFile() (err error) {
 }
 
 func (s *Config) Init(insecure bool) {
-	s.httpClient = http.Client{
+	s.httpClient = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: insecure,
@@ -70,9 +68,9 @@ func (s *Config) SendCommand(command string) (err error) {
 	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	q := req.URL.Query()
-	q.Add("uuid", s.UID)
-	q.Add("remote_uuid", s.GID)
 	q.Add("apikey", s.ApiKey)
+	q.Add("daemonId", s.NodeId)
+	q.Add("uuid", s.InstanceId)
 	q.Add("command", command)
 	req.URL.RawQuery = q.Encode()
 
@@ -81,9 +79,11 @@ func (s *Config) SendCommand(command string) (err error) {
 	if err != nil {
 		return err
 	}
+
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("statusCode is " + strconv.Itoa(resp.StatusCode))
+		return errors.New(strconv.Itoa(resp.StatusCode) + " " + http.StatusText(resp.StatusCode))
 	}
+	_, _ = io.Copy(io.Discard, resp.Body)
 	err = resp.Body.Close()
 	return
 }

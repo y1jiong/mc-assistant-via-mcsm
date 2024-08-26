@@ -10,15 +10,16 @@ import (
 )
 
 const (
-	Version   = "0.3.2"
+	Version   = "0.3.3"
 	Copyright = "Copyright © 2022-2024 yzy613. All rights reserved.\n" +
 		"GitHub: https://github.com/yzy613"
 )
 
 var (
+	GitTag               = ""
+	GitCommit            = ""
 	BuildTime            = ""
-	CommitHash           = ""
-	versionOption        = flag.BoolP("version", "v", false, "打印版本信息并退出")
+	versionOption        = flag.BoolP("version", "V", false, "打印版本信息并退出")
 	initOption           = flag.BoolP("init", "i", false, "初始化配置文件并退出")
 	generateDataOption   = flag.StringP("generate", "g", "", "指定队伍目录并生成数据文件并退出")
 	dataFile             = flag.StringP("data", "d", "", "手动指定数据文件名")
@@ -122,7 +123,8 @@ func main() {
 
 func printVersion() {
 	fmt.Println("Version: " + Version)
+	fmt.Println("Git Tag: " + GitTag)
+	fmt.Println("Git Commit: " + GitCommit)
 	fmt.Println("Build Time: " + BuildTime)
-	fmt.Println("Commit Hash: " + CommitHash)
 	fmt.Println(Copyright)
 }

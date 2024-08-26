@@ -82,26 +82,28 @@ func (s *Teams) loadTxtFile(teamName, filePath string) (err error) {
 	}
 	for _, v := range strings.Split(content, "\n") {
 		// 检查空行
-		if v != "" {
-			if _, ok := s.Id[v]; ok {
-				if errText.Len() > 0 {
-					errText.WriteString("\n")
-				}
-				errText.WriteString("检查到 ID: " + v + " 重复")
-				continue
-			}
-			t.Members = append(t.Members, v)
-			s.Id[v] = struct{}{}
+		if v == "" {
+			continue
 		}
+
+		if _, ok := s.Id[v]; ok {
+			if errText.Len() > 0 {
+				errText.WriteString("\n")
+			}
+			errText.WriteString("检查到重复 ID: " + v)
+			continue
+		}
+		t.Members = append(t.Members, v)
+		s.Id[v] = struct{}{}
 	}
 	if errText.Len() > 0 {
 		return errors.New(errText.String())
 	}
+
 	(*s).Teams = append((*s).Teams, t)
 	return
 }
 
-// ExecuteWhiteTeamCommand 目前仅支持 MCSM 9
 func (s *Teams) ExecuteWhiteTeamCommand(c common.Config) (err error) {
 	// 拼接最终 API 地址
 	for _, v := range s.Teams {
