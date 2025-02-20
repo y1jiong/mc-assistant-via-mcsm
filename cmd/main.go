@@ -11,8 +11,8 @@ import (
 
 const (
 	Version   = "0.3.3"
-	Copyright = "Copyright © 2022-2024 yzy613. All rights reserved.\n" +
-		"GitHub: https://github.com/yzy613"
+	Copyright = "Copyright © 2022-2024 y1jiong. All rights reserved.\n" +
+		"GitHub: https://github.com/y1jiong"
 )
 
 var (
