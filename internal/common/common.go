@@ -9,7 +9,7 @@ import (
 func IsDirExistAndCreate(dirPath string) (err error) {
 	_, err = os.Stat(dirPath)
 	if err != nil || os.IsNotExist(err) {
-		err = os.MkdirAll(dirPath, 0750)
+		err = os.MkdirAll(dirPath, 0o755)
 		if err != nil {
 			return err
 		}
@@ -43,7 +43,7 @@ func MarshalAndSave(content any, filePath string) (err error) {
 	if err != nil {
 		return
 	}
-	err = os.WriteFile(filePath, jsonContent, 0600)
+	err = os.WriteFile(filePath, jsonContent, 0o644)
 	if err != nil {
 		return
 	}
