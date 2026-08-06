@@ -1,11 +1,15 @@
 package data
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log"
-	"mc-assistant-via-mcsm/internal/common"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"mc-assistant-via-mcsm/internal/common"
 )
 
 type Team struct {
@@ -15,171 +19,148 @@ type Team struct {
 
 type Teams struct {
 	Teams         []Team
-	Id            map[string]struct{}
-	TpCoordinates []string
+	ID            map[string]struct{}
+	TPCoordinates []string
 	NoTeam        bool
 }
 
-func (s *Teams) Init() {
-	s.Teams = make([]Team, 0, 4)
-	s.Id = make(map[string]struct{})
-	return
+type commandSender interface {
+	SendCommand(context.Context, string) error
+	Delay(context.Context) error
 }
 
-func (s *Teams) LoadJsonFile(fileName string) (err error) {
-	return common.LoadAndUnmarshal(fileName, &(s.Teams))
+func NewTeams() *Teams {
+	return &Teams{
+		Teams: make([]Team, 0, 4),
+		ID:    make(map[string]struct{}),
+	}
 }
 
-func (s *Teams) ParseTeamAndMember(teamDirectoryName string) (err error) {
-	fileInfoList, err := os.ReadDir(teamDirectoryName)
-	if err != nil {
-		return
+func (t *Teams) LoadJSONFile(fileName string) error {
+	if err := common.LoadJSON(fileName, &t.Teams); err != nil {
+		return err
 	}
-	for _, v := range fileInfoList {
-		if !v.IsDir() {
-			// 获取队伍名称
-			teamName := ""
-			if strings.Contains(v.Name(), ".") {
-				tempSlice := strings.Split(v.Name(), ".")
-				tempSlice = tempSlice[0 : len(tempSlice)-1]
-				length := len(tempSlice)
-				for k, v := range tempSlice {
-					teamName += v
-					if k+1 < length {
-						teamName += "."
-					}
-				}
-			} else {
-				teamName = v.Name()
-			}
-
-			// 读取队伍成员文件
-			path := teamDirectoryName + "/" + v.Name()
-			log.Println("加载队伍", teamName, "("+v.Name()+")")
-			err = s.loadTxtFile(teamName, path)
-			if err != nil {
-				return
-			}
-		}
-	}
-	return
+	return nil
 }
 
-func (s *Teams) loadTxtFile(teamName, filePath string) (err error) {
-	// 新增队伍数据结构
-	t := Team{TeamName: teamName}
-	_, err = os.Stat(filePath)
+func (t *Teams) ParseTeamAndMember(teamDirectoryName string) error {
+	entries, err := os.ReadDir(teamDirectoryName)
 	if err != nil {
-		return
+		return fmt.Errorf("读取队伍目录 %q: %w", teamDirectoryName, err)
 	}
-	txtContent, err := os.ReadFile(filePath)
-	// CRLF to LF
-	content := strings.ReplaceAll(string(txtContent), "\r\n", "\n")
-	// err text
-	errText := strings.Builder{}
-	if err != nil {
-		return
-	}
-	for _, v := range strings.Split(content, "\n") {
-		// 检查空行
-		if v == "" {
+
+	for _, entry := range entries {
+		if entry.IsDir() {
 			continue
 		}
 
-		if _, ok := s.Id[v]; ok {
-			if errText.Len() > 0 {
-				errText.WriteString("\n")
-			}
-			errText.WriteString("检查到重复 ID: " + v)
+		teamName := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+		path := filepath.Join(teamDirectoryName, entry.Name())
+		log.Printf("加载队伍 %s (%s)", teamName, entry.Name())
+		if err := t.loadTextFile(teamName, path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Teams) loadTextFile(teamName, filePath string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("读取队伍文件 %q: %w", filePath, err)
+	}
+
+	team := Team{TeamName: teamName}
+	var duplicateErrors []error
+	for _, member := range splitLines(string(content)) {
+		if member == "" {
 			continue
 		}
-		t.Members = append(t.Members, v)
-		s.Id[v] = struct{}{}
+		if _, exists := t.ID[member]; exists {
+			duplicateErrors = append(duplicateErrors, fmt.Errorf("检查到重复 ID: %s", member))
+			continue
+		}
+		team.Members = append(team.Members, member)
+		t.ID[member] = struct{}{}
 	}
-	if errText.Len() > 0 {
-		return errors.New(errText.String())
+	if err := errors.Join(duplicateErrors...); err != nil {
+		return err
 	}
 
-	(*s).Teams = append((*s).Teams, t)
-	return
+	t.Teams = append(t.Teams, team)
+	return nil
 }
 
-func (s *Teams) ExecuteWhiteTeamCommand(c common.Config) (err error) {
-	// 拼接最终 API 地址
-	for _, v := range s.Teams {
-		// 创建队伍
-		if !s.NoTeam {
-			err = c.SendCommand("team add " + v.TeamName)
-			if err != nil {
-				return
+func (t *Teams) ExecuteWhiteTeamCommand(ctx context.Context, sender commandSender) error {
+	for _, team := range t.Teams {
+		if !t.NoTeam {
+			if err := sendWithDelay(ctx, sender, "team add "+team.TeamName); err != nil {
+				return err
 			}
-			c.Delay()
 		}
-		for _, vv := range v.Members {
-			// 加入白名单
-			err = c.SendCommand("whitelist add " + vv)
-			if err != nil {
-				return
+		for _, member := range team.Members {
+			if err := sendWithDelay(ctx, sender, "whitelist add "+member); err != nil {
+				return err
 			}
-			c.Delay()
-
-			// 加入队伍
-			if !s.NoTeam {
-				err = c.SendCommand("team join " + v.TeamName + " " + vv)
-				if err != nil {
-					return
+			if !t.NoTeam {
+				if err := sendWithDelay(ctx, sender, "team join "+team.TeamName+" "+member); err != nil {
+					return err
 				}
-				c.Delay()
 			}
 		}
 	}
-	return
+	return nil
 }
 
-func (s *Teams) ParseCoordinate(coordinateFile string) (err error) {
-	_, err = os.Stat(coordinateFile)
+func (t *Teams) ParseCoordinate(coordinateFile string) error {
+	content, err := os.ReadFile(coordinateFile)
 	if err != nil {
-		return
+		return fmt.Errorf("读取坐标文件 %q: %w", coordinateFile, err)
 	}
-	txtContent, err := os.ReadFile(coordinateFile)
-	// CRLF to LF
-	content := strings.ReplaceAll(string(txtContent), "\r\n", "\n")
-	if err != nil {
-		return
-	}
-	for _, v := range strings.Split(content, "\n") {
-		// 检查空行
-		if v != "" {
-			(*s).TpCoordinates = append((*s).TpCoordinates, v)
+
+	t.TPCoordinates = t.TPCoordinates[:0]
+	for _, coordinate := range splitLines(string(content)) {
+		if coordinate != "" {
+			t.TPCoordinates = append(t.TPCoordinates, coordinate)
 		}
 	}
-	return
+	if len(t.TPCoordinates) == 0 {
+		return errors.New("坐标文件中没有可用坐标")
+	}
+	return nil
 }
 
-func (s *Teams) ExecuteTpCommand(c common.Config, tpTeam string, tpCountPerCoordinate int) (err error) {
-	maxPosition := len(s.TpCoordinates)
-	position := 0
-	count := 0
-	for _, v := range s.Teams {
-		if v.TeamName == tpTeam {
-			for _, vv := range v.Members {
-				// tp sb. coordinate
-				err = c.SendCommand("tp " + vv + " " + s.TpCoordinates[position])
-				count++
-				if count >= tpCountPerCoordinate {
-					position++
-					if position >= maxPosition {
-						position = 0
-					}
-					count = 0
-				}
-				if err != nil {
-					return
-				}
-				c.Delay()
-			}
-			break
-		}
+func (t *Teams) ExecuteTPCommand(ctx context.Context, sender commandSender, teamName string, countPerCoordinate int) error {
+	if countPerCoordinate < 1 {
+		return errors.New("每个坐标的玩家数必须大于 0")
 	}
-	return
+	if len(t.TPCoordinates) == 0 {
+		return errors.New("没有可用的传送坐标")
+	}
+
+	for _, team := range t.Teams {
+		if team.TeamName != teamName {
+			continue
+		}
+		for index, member := range team.Members {
+			coordinateIndex := (index / countPerCoordinate) % len(t.TPCoordinates)
+			command := "tp " + member + " " + t.TPCoordinates[coordinateIndex]
+			if err := sendWithDelay(ctx, sender, command); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return fmt.Errorf("未找到队伍 %q", teamName)
+}
+
+func sendWithDelay(ctx context.Context, sender commandSender, command string) error {
+	if err := sender.SendCommand(ctx, command); err != nil {
+		return err
+	}
+	return sender.Delay(ctx)
+}
+
+func splitLines(content string) []string {
+	return strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
 }

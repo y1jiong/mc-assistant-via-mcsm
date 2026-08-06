@@ -2,50 +2,34 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
-func IsDirExistAndCreate(dirPath string) (err error) {
-	_, err = os.Stat(dirPath)
-	if err != nil || os.IsNotExist(err) {
-		err = os.MkdirAll(dirPath, 0o755)
-		if err != nil {
-			return err
-		}
+func LoadJSON(filePath string, destination any) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("读取 %q: %w", filePath, err)
 	}
-	return
+	if err := json.Unmarshal(content, destination); err != nil {
+		return fmt.Errorf("解析 %q: %w", filePath, err)
+	}
+	return nil
 }
 
-// LoadAndUnmarshal dst 参数要加 & 才能修改原变量
-func LoadAndUnmarshal(filePath string, dst any) (err error) {
-	_, err = os.Stat(filePath)
-	if err != nil {
-		return
+func SaveJSON(content any, filePath string) error {
+	directory := filepath.Dir(filePath)
+	if err := os.MkdirAll(directory, 0o755); err != nil {
+		return fmt.Errorf("创建目录 %q: %w", directory, err)
 	}
-	jsonContent, err := os.ReadFile(filePath)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(jsonContent, &dst)
-	if err != nil {
-		return
-	}
-	return
-}
 
-func MarshalAndSave(content any, filePath string) (err error) {
-	err = IsDirExistAndCreate(filepath.Dir(filePath))
-	if err != nil {
-		return
-	}
 	jsonContent, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
-		return
+		return fmt.Errorf("编码 JSON: %w", err)
 	}
-	err = os.WriteFile(filePath, jsonContent, 0o644)
-	if err != nil {
-		return
+	if err := os.WriteFile(filePath, jsonContent, 0o644); err != nil {
+		return fmt.Errorf("写入 %q: %w", filePath, err)
 	}
 	return nil
 }
